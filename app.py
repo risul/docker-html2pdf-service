@@ -9,20 +9,19 @@ from werkzeug.wrappers   import Request, Response
 @Request.application
 def application(request):
     if is_valid_request(request):
+        page_size           = request.form.get('size') or 'A4'
+        page_orientation    = request.form.get('orientation') or 'Portrait'
+        
         if is_valid_file_request(request):
             html_file   = request.files['html']
-            page_size   = request.form.get('size') or 'A4'
-            
-            pdf_file    = generate_pdf(html_file, page_size)
+            pdf_file    = generate_pdf(html_file, page_size, page_orientation)
             response    = build_response(request, pdf_file)
 
         elif is_valid_form_request(request):
             html_param  = request.form.get('html').encode()
             html_file   = io.BytesIO(html_param)
             file_name   = request.form.get('filename')
-            page_size   = request.form.get('size') or 'A4'
-            
-            pdf_file    = generate_pdf(html_file, page_size)
+            pdf_file    = generate_pdf(html_file, page_size, page_orientation)
             response    = build_post_response(request, pdf_file, file_name)
 
         else:
@@ -51,8 +50,8 @@ def is_valid_file_request(request):
     return html_param
 
 
-def generate_pdf(html_file, size):
-    process = Popen(wkhtmltopdf_cmd(size), stdin=PIPE, stdout=PIPE)
+def generate_pdf(html_file, size, orientation):
+    process = Popen(wkhtmltopdf_cmd(size, orientation), stdin=PIPE, stdout=PIPE)
 
     shutil.copyfileobj(html_file, process.stdin)
     process.stdin.close()
@@ -82,8 +81,8 @@ def header_filename(file_name):
     return "attachment; filename={0}".format(file_name)
 
 
-def wkhtmltopdf_cmd(size):
-    return ['/usr/bin/wkhtmltopdf.sh', '-q', '-d', '300', '-s', size, '-', '-']
+def wkhtmltopdf_cmd(size, orientation):
+    return ['/usr/bin/wkhtmltopdf.sh', '-q', '-d', '300', '-s', size, '-O', orientation, '-', '-']
 
 
 if __name__ == '__main__':
