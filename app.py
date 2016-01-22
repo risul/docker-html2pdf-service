@@ -20,12 +20,11 @@ def application(request):
         elif is_valid_form_request(request):
             html_param  = request.form.get('html').encode()
             html_file   = io.BytesIO(html_param)
-            file_name   = request.form.get('filename')
             pdf_file    = generate_pdf(html_file, page_size, page_orientation)
-            response    = build_post_response(request, pdf_file, file_name)
+            response    = build_post_response(request, pdf_file)
 
         else:
-            response = BadRequest('html and filename params are required')
+            response = BadRequest('html param is required')
 
     else:
         response = BadRequest('Expect a POST request')
@@ -39,9 +38,8 @@ def is_valid_request(request):
 
 def is_valid_form_request(request):
     html_param     = request.form.get('html')
-    filename_param = request.form.get('filename')
 
-    return  html_param and filename_param
+    return  html_param
 
 
 def is_valid_file_request(request):
@@ -68,7 +66,7 @@ def build_response(request, pdf_file):
     return response
 
 
-def build_post_response(request, pdf_file, file_name):
+def build_post_response(request, pdf_file, file_name='response.pdf'):
     response = build_response(request, pdf_file)
 
     response.headers.add('Content-Disposition', header_filename(file_name))
